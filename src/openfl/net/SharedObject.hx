@@ -964,6 +964,10 @@ class SharedObject extends EventDispatcher
 	{
 		if (name != null)
 		{
+			if (name == "Dynamic")
+			{
+				return null;
+			}
 			if (StringTools.startsWith(name, "neash."))
 			{
 				name = StringTools.replace(name, "neash.", "openfl.");
