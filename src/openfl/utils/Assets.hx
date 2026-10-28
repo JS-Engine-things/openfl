@@ -1,5 +1,12 @@
 package openfl.utils;
 
+import lime.app.Promise;
+import lime.utils.AssetLibrary as LimeAssetLibrary;
+import lime.utils.Assets as LimeAssets;
+#if lime_vorbis
+import lime.media.AudioBuffer;
+import lime.media.vorbis.VorbisFile;
+#end
 import openfl.utils._internal.Log;
 import openfl.display.BitmapData;
 import openfl.display.MovieClip;
@@ -8,15 +15,6 @@ import openfl.events.Event;
 import openfl.events.EventDispatcher;
 import openfl.media.Sound;
 import openfl.text.Font;
-#if lime
-import lime.app.Promise;
-import lime.utils.AssetLibrary as LimeAssetLibrary;
-import lime.utils.Assets as LimeAssets;
-#end
-#if lime_vorbis
-import lime.media.AudioBuffer;
-import lime.media.vorbis.VorbisFile;
-#end
 
 /**
 	The Assets class provides a cross-platform interface to access
@@ -34,12 +32,9 @@ import lime.media.vorbis.VorbisFile;
 	and specifying a custom preloader using <window preloader="" />
 	in the project file.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.BitmapData)
 @:access(openfl.display.Sprite)
+@:access(openfl.media.Sound)
 @:access(openfl.text.Font)
 @:access(openfl.utils.AssetLibrary)
 class Assets
@@ -51,12 +46,10 @@ class Assets
 
 	public static function addEventListener(type:String, listener:Dynamic, useCapture:Bool = false, priority:Int = 0, useWeakReference:Bool = false):Void
 	{
-		#if lime
 		if (!LimeAssets.onChange.has(LimeAssets_onChange))
 		{
 			LimeAssets.onChange.add(LimeAssets_onChange);
 		}
-		#end
 
 		dispatcher.addEventListener(type, listener, useCapture, priority, useWeakReference);
 	}
@@ -74,7 +67,6 @@ class Assets
 	**/
 	public static function exists(id:String, type:AssetType = null):Bool
 	{
-		#if lime
 		/*if (id != null && StringTools.endsWith(id, 'png') && type == null || type == IMAGE)
 		{
 			if (LimeAssets.exists(id.substr(0, id.length - 3) + 'astc', BINARY)) return true;
@@ -82,9 +74,6 @@ class Assets
 			if (LimeAssets.exists(id.substr(0, id.length - 3) + 'dds', BINARY)) return true;
 		}*/
 		return LimeAssets.exists(id, cast type);
-		#else
-		return false;
-		#end
 	}
 
 	/**
@@ -96,7 +85,6 @@ class Assets
 	**/
 	public static function getBitmapData(id:String, useCache:Bool = true):BitmapData
 	{
-		#if (lime && tools && !display)
 		if (useCache && cache.enabled && cache.hasBitmapData(id))
 		{
 			var bitmapData = cache.getBitmapData(id);
@@ -136,11 +124,7 @@ class Assets
 
 		if (image != null)
 		{
-			#if flash
-			var bitmapData = image.src;
-			#else
 			var bitmapData = BitmapData.fromImage(image);
-			#end
 
 			if (useCache && cache.enabled)
 			{
@@ -149,7 +133,6 @@ class Assets
 
 			return bitmapData;
 		}
-		#end
 
 		return null;
 	}
@@ -162,11 +145,7 @@ class Assets
 	**/
 	public static function getBytes(id:String):ByteArray
 	{
-		#if lime
 		return LimeAssets.getBytes(id);
-		#else
-		return null;
-		#end
 	}
 
 	/**
@@ -178,7 +157,6 @@ class Assets
 	**/
 	public static function getFont(id:String, useCache:Bool = true):Font
 	{
-		#if (lime && tools && !display && !macro)
 		if (useCache && cache.enabled && cache.hasFont(id))
 		{
 			return cache.getFont(id);
@@ -188,12 +166,9 @@ class Assets
 
 		if (limeFont != null)
 		{
-			#if flash
-			var font = limeFont.src;
-			#else
 			var font = new Font();
+
 			font.__fromLimeFont(limeFont);
-			#end
 
 			if (useCache && cache.enabled)
 			{
@@ -202,18 +177,13 @@ class Assets
 
 			return font;
 		}
-		#end
 
 		return new Font();
 	}
 
 	public static function getLibrary(name:String):#if lime LimeAssetLibrary #else AssetLibrary #end
 	{
-		#if lime
 		return LimeAssets.getLibrary(name);
-		#else
-		return null;
-		#end
 	}
 
 	/**
@@ -224,7 +194,6 @@ class Assets
 	**/
 	public static function getMovieClip(id:String):MovieClip
 	{
-		#if (lime && tools && !display)
 		var libraryName = id.substring(0, id.indexOf(":"));
 		var symbolName = id.substr(id.indexOf(":") + 1);
 		var limeLibrary = getLibrary(libraryName);
@@ -255,14 +224,13 @@ class Assets
 		{
 			Log.error("There is no asset library named \"" + libraryName + "\"");
 		}
-		#end
 
 		return null;
 	}
 
 	public static function getMusic(id:String, useCache:Bool = true):Sound
 	{
-		#if (lime_vorbis && lime > "7.9.0")
+		#if lime_vorbis
 		var path = getPath(id);
 		// TODO: What if it is a WAV or non-Vorbis file?
 		var vorbisFile = VorbisFile.fromFile(path);
@@ -282,11 +250,7 @@ class Assets
 	**/
 	public static function getPath(id:String):String
 	{
-		#if lime
 		return LimeAssets.getPath(id);
-		#else
-		return null;
-		#end
 	}
 
 	/**
@@ -298,7 +262,6 @@ class Assets
 	**/
 	public static function getSound(id:String, useCache:Bool = true):Sound
 	{
-		#if (lime && tools && !display)
 		if (useCache && cache.enabled && cache.hasSound(id))
 		{
 			var sound = cache.getSound(id);
@@ -313,11 +276,7 @@ class Assets
 
 		if (buffer != null)
 		{
-			#if flash
-			var sound = buffer.src;
-			#else
 			var sound = Sound.fromAudioBuffer(buffer);
-			#end
 
 			if (useCache && cache.enabled)
 			{
@@ -326,7 +285,6 @@ class Assets
 
 			return sound;
 		}
-		#end
 
 		return null;
 	}
@@ -339,11 +297,7 @@ class Assets
 	**/
 	public static function getText(id:String):String
 	{
-		#if lime
 		return LimeAssets.getText(id);
-		#else
-		return null;
-		#end
 	}
 
 	public static function hasEventListener(type:String):Bool
@@ -353,11 +307,7 @@ class Assets
 
 	public static function hasLibrary(name:String):Bool
 	{
-		#if lime
 		return LimeAssets.hasLibrary(name);
-		#else
-		return false;
-		#end
 	}
 
 	/**
@@ -375,7 +325,6 @@ class Assets
 		if (libraryBindings.exists(className))
 		{
 			var library = libraryBindings.get(className);
-			#if !flash
 			if (instance == null)
 			{
 				Sprite.__constructor = function(instance:Sprite)
@@ -388,10 +337,6 @@ class Assets
 				Sprite.__constructor = null;
 				instance.__bind(library, className);
 			}
-			#else
-			// TODO: Consolidate behavior
-			library.bind(className);
-			#end
 		}
 		else
 		{
@@ -408,7 +353,6 @@ class Assets
 	**/
 	public static function isLocal(id:String, type:AssetType = null, useCache:Bool = true):Bool
 	{
-		#if (lime && tools && !display)
 		if (useCache && cache.enabled)
 		{
 			if (type == AssetType.IMAGE || type == null)
@@ -438,40 +382,18 @@ class Assets
 		{
 			return library.isLocal(symbolName, cast type);
 		}
-		#end
 
 		return false;
 	}
 
 	@:analyzer(ignore) private static function isValidBitmapData(bitmapData:BitmapData):Bool
 	{
-		#if (lime && tools && !display)
-		#if flash
-		try
-		{
-			bitmapData.width;
-			return true;
-		}
-		catch (e:Dynamic)
-		{
-			return false;
-		}
-		#else
-		return (bitmapData != null && #if !lime_hybrid bitmapData.image != null #else bitmapData.__handle != null #end);
-		#end
-		#else
-		return true;
-		#end
+		return (bitmapData != null && bitmapData.image != null);
 	}
 
 	@:noCompletion private static function isValidSound(sound:Sound):Bool
 	{
-		#if ((tools && !display) && (cpp || neko || nodejs))
-		return true;
-		// return (sound.__handle != null && sound.__handle != 0);
-		#else
-		return true;
-		#end
+		return (sound != null && sound.__buffer != null && (sound.__buffer.src != null || sound.__buffer.data != null));
 	}
 
 	/**
@@ -481,11 +403,7 @@ class Assets
 	**/
 	public static function list(type:AssetType = null):Array<String>
 	{
-		#if lime
 		return LimeAssets.list(cast type);
-		#else
-		return [];
-		#end
 	}
 
 	/**
@@ -500,7 +418,6 @@ class Assets
 		if (useCache == null)
 			useCache = true;
 
-		#if (lime && tools && !display)
 		var promise = new Promise<BitmapData>();
 
 		if (useCache && cache.enabled && cache.hasBitmapData(id))
@@ -518,11 +435,7 @@ class Assets
 		{
 			if (image != null)
 			{
-				#if flash
-				var bitmapData = image.src;
-				#else
 				var bitmapData = BitmapData.fromImage(image);
-				#end
 
 				if (useCache && cache.enabled)
 				{
@@ -538,9 +451,6 @@ class Assets
 		}).onError(promise.error).onProgress(promise.progress);
 
 		return promise.future;
-		#else
-		return Future.withValue(getBitmapData(id, useCache));
-		#end
 	}
 
 	/**
@@ -551,7 +461,6 @@ class Assets
 	**/
 	public static function loadBytes(id:String):Future<ByteArray>
 	{
-		#if lime
 		var promise = new Promise<ByteArray>();
 		var future = LimeAssets.loadBytes(id);
 
@@ -560,9 +469,6 @@ class Assets
 		future.onError(function(msg) promise.error(msg));
 
 		return promise.future;
-		#else
-		return Future.withValue(getBytes(id));
-		#end
 	}
 
 	/**
@@ -577,7 +483,6 @@ class Assets
 		if (useCache == null)
 			useCache = true;
 
-		#if (lime && tools && !display && !macro)
 		var promise = new Promise<Font>();
 
 		if (useCache && cache.enabled && cache.hasFont(id))
@@ -589,12 +494,8 @@ class Assets
 		LimeAssets.loadFont(id)
 			.onComplete(function(limeFont)
 			{
-				#if flash
-				var font = limeFont.src;
-				#else
 				var font = new Font();
 				font.__fromLimeFont(limeFont);
-				#end
 
 				if (useCache && cache.enabled)
 				{
@@ -607,9 +508,6 @@ class Assets
 			.onProgress(promise.progress);
 
 		return promise.future;
-		#else
-		return Future.withValue(getFont(id, useCache));
-		#end
 	}
 
 	/**
@@ -619,7 +517,6 @@ class Assets
 	**/
 	public static function loadLibrary(name:String):#if java Future<LimeAssetLibrary> #else Future<AssetLibrary> #end
 	{
-		#if lime
 		return LimeAssets.loadLibrary(name).then(function(library)
 		{
 			var _library:AssetLibrary = null;
@@ -644,9 +541,6 @@ class Assets
 
 			return Future.withValue(_library);
 		});
-		#else
-		return cast Future.withError("Cannot load library");
-		#end
 	}
 
 	/**
@@ -661,7 +555,6 @@ class Assets
 		if (useCache == null)
 			useCache = true;
 
-		#if lime
 		#if !html5
 		var promise = new Promise<Sound>();
 
@@ -695,9 +588,6 @@ class Assets
 		var future = new Future<Sound>(function() return getMusic(id, useCache));
 		return future;
 		#end
-		#else
-		return Future.withValue(getMusic(id, useCache));
-		#end
 	}
 
 	/**
@@ -709,7 +599,6 @@ class Assets
 	**/
 	public static function loadMovieClip(id:String):Future<MovieClip>
 	{
-		#if (lime && tools && !display)
 		var promise = new Promise<MovieClip>();
 
 		var libraryName = id.substring(0, id.indexOf(":"));
@@ -737,9 +626,6 @@ class Assets
 		}
 
 		return promise.future;
-		#else
-		return Future.withValue(getMovieClip(id));
-		#end
 	}
 
 	/**
@@ -754,7 +640,6 @@ class Assets
 		if (useCache == null)
 			useCache = true;
 
-		#if lime
 		var promise = new Promise<Sound>();
 
 		LimeAssets.loadAudioBuffer(id, useCache)
@@ -762,11 +647,7 @@ class Assets
 			{
 				if (buffer != null)
 				{
-					#if flash
-					var sound = buffer.src;
-					#else
 					var sound = Sound.fromAudioBuffer(buffer);
-					#end
 
 					if (useCache && cache.enabled)
 					{
@@ -783,9 +664,6 @@ class Assets
 			.onError(promise.error)
 			.onProgress(promise.progress);
 		return promise.future;
-		#else
-		return Future.withValue(getSound(id, useCache));
-		#end
 	}
 
 	/**
@@ -797,12 +675,8 @@ class Assets
 	**/
 	public static function loadText(id:String):Future<String>
 	{
-		#if lime
 		var future = LimeAssets.loadText(id);
 		return future;
-		#else
-		return Future.withValue(getText(id));
-		#end
 	}
 
 	/**
@@ -822,9 +696,7 @@ class Assets
 	**/
 	public static function registerLibrary(name:String, library:AssetLibrary):Void
 	{
-		#if lime
 		LimeAssets.registerLibrary(name, library);
-		#end
 	}
 
 	public static function removeEventListener(type:String, listener:Dynamic, capture:Bool = false):Void
@@ -839,23 +711,12 @@ class Assets
 
 	@:noCompletion private static function resolveEnum(name:String):Enum<Dynamic>
 	{
-		var value = Type.resolveEnum(name);
-
-		#if flash
-		if (value == null)
-		{
-			return cast Type.resolveClass(name);
-		}
-		#end
-
-		return value;
+		return Type.resolveEnum(name);
 	}
 
 	public static function unloadLibrary(name:String):Void
 	{
-		#if lime
 		LimeAssets.unloadLibrary(name);
-		#end
 	}
 
 	/**
